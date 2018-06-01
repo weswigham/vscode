@@ -8,7 +8,7 @@
  * https://github.com/Microsoft/TypeScript-Sublime-Plugin/blob/master/TypeScript%20Indent.tmPreferences
  * ------------------------------------------------------------------------------------------ */
 
-import { workspace, Memento, Diagnostic, Range, Disposable, Uri, DiagnosticSeverity, DiagnosticTag } from 'vscode';
+import { workspace, Memento, Diagnostic, Range, Disposable, Uri, DiagnosticSeverity, DiagnosticTag, DiagnosticRelatedInformation } from 'vscode';
 
 import * as Proto from './protocol';
 import * as PConst from './protocol.const';
@@ -262,6 +262,15 @@ export default class TypeScriptServiceClientHost {
 		converted.source = diagnostic.source || source;
 		if (diagnostic.code) {
 			converted.code = diagnostic.code;
+		}
+		if (diagnostic.relatedInformation) {
+			converted.relatedInformation = diagnostic.relatedInformation.map(info => {
+				let span = info.span;
+				if (!span) {
+					return undefined;
+				}
+				return new DiagnosticRelatedInformation(typeConverters.Location.fromTextSpan(this.client.asUrl(span.file), span), info.message);
+			}).filter(x => !!x) as DiagnosticRelatedInformation[];
 		}
 		if (diagnostic.reportsUnnecessary) {
 			converted.customTags = [DiagnosticTag.Unnecessary];
