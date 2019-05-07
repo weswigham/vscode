@@ -27,6 +27,10 @@ import { IAction } from 'vs/base/common/actions';
 import { IActionBarOptions, ActionsOrientation } from 'vs/base/browser/ui/actionbar/actionbar';
 import { peekViewTitleForeground, peekViewTitleInfoForeground } from 'vs/editor/contrib/referenceSearch/referencesWidget';
 import { AccessibilitySupport } from 'vs/platform/accessibility/common/accessibility';
+import { renderMarkdown } from 'vs/base/browser/htmlContentRenderer';
+import { MarkdownString } from 'vs/base/common/htmlContent';
+import { IOpenerService } from 'vs/platform/opener/common/opener';
+import { URI } from 'vs/base/common/uri';
 
 class MessageWidget {
 
@@ -40,7 +44,12 @@ class MessageWidget {
 	private readonly _relatedDiagnostics = new WeakMap<HTMLElement, IRelatedInformation>();
 	private readonly _disposables: IDisposable[] = [];
 
-	constructor(parent: HTMLElement, editor: ICodeEditor, onRelatedInformation: (related: IRelatedInformation) => void) {
+	constructor(
+		parent: HTMLElement,
+		editor: ICodeEditor,
+		onRelatedInformation: (related: IRelatedInformation) => void,
+		private readonly _openerService: IOpenerService
+	) {
 		this._editor = editor;
 
 		const domNode = document.createElement('div');
@@ -81,8 +90,7 @@ class MessageWidget {
 		dispose(this._disposables);
 	}
 
-	update({ source, message, relatedInformation, code }: IMarker): void {
-
+	update({ source, message, richMessage, relatedInformation, code }: IMarker): void {
 		const lines = message.split(/\r\n|\r|\n/g);
 		this._lines = lines.length;
 		this._longestLineLength = 0;
@@ -93,13 +101,34 @@ class MessageWidget {
 		dom.clearNode(this._messageBlock);
 		this._editor.applyFontInfo(this._messageBlock);
 		let lastLineElement = this._messageBlock;
-		for (const line of lines) {
-			lastLineElement = document.createElement('div');
-			lastLineElement.innerText = line;
-			if (line === '') {
-				lastLineElement.style.height = this._messageBlock.style.lineHeight;
+		if (richMessage) {
+			const rendered = renderMarkdown(new MarkdownString(richMessage));
+			const spanContainer = document.createElement('span');
+			spanContainer.append(...Array.prototype.slice.call(rendered.children[0].childNodes));
+			lastLineElement.appendChild(spanContainer);
+			lastLineElement.addEventListener('click', event => {
+				for (let node = event.target as HTMLElement; node; node = node.parentNode as HTMLElement) {
+					if (node instanceof HTMLAnchorElement) {
+						const href = node.getAttribute('data-href');
+						if (href) {
+							this._openerService.open(URI.parse(href));
+						}
+						break;
+					} else if (node === event.currentTarget) {
+						break;
+					}
+				}
+			});
+		}
+		else {
+			for (const line of lines) {
+				lastLineElement = document.createElement('div');
+				lastLineElement.innerText = line;
+				if (line === '') {
+					lastLineElement.style.height = this._messageBlock.style.lineHeight;
+				}
+				this._messageBlock.appendChild(lastLineElement);
 			}
-			this._messageBlock.appendChild(lastLineElement);
 		}
 		if (source || code) {
 			const detailsElement = document.createElement('span');
@@ -180,7 +209,8 @@ export class MarkerNavigationWidget extends PeekViewWidget {
 	constructor(
 		editor: ICodeEditor,
 		private readonly actions: IAction[],
-		private readonly _themeService: IThemeService
+		private readonly _themeService: IThemeService,
+		private readonly _openerService: IOpenerService
 	) {
 		super(editor, { showArrow: true, showFrame: true, isAccessible: true });
 		this._severity = MarkerSeverity.Warning;
@@ -246,7 +276,7 @@ export class MarkerNavigationWidget extends PeekViewWidget {
 		this._container = document.createElement('div');
 		container.appendChild(this._container);
 
-		this._message = new MessageWidget(this._container, this.editor, related => this._onDidSelectRelatedInformation.fire(related));
+		this._message = new MessageWidget(this._container, this.editor, related => this._onDidSelectRelatedInformation.fire(related), this._openerService);
 		this._disposables.push(this._message);
 	}
 

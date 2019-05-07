@@ -26,6 +26,7 @@ import { onUnexpectedError } from 'vs/base/common/errors';
 import { MenuRegistry, MenuId } from 'vs/platform/actions/common/actions';
 import { Action } from 'vs/base/common/actions';
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
+import { IOpenerService } from 'vs/platform/opener/common/opener';
 
 class MarkerModel {
 
@@ -214,7 +215,8 @@ export class MarkerController implements editorCommon.IEditorContribution {
 		@IContextKeyService private readonly _contextKeyService: IContextKeyService,
 		@IThemeService private readonly _themeService: IThemeService,
 		@ICodeEditorService private readonly _editorService: ICodeEditorService,
-		@IKeybindingService private readonly _keybindingService: IKeybindingService
+		@IKeybindingService private readonly _keybindingService: IKeybindingService,
+		@IOpenerService private readonly _openerService: IOpenerService,
 	) {
 		this._editor = editor;
 		this._widgetVisible = CONTEXT_MARKERS_NAVIGATION_VISIBLE.bindTo(this._contextKeyService);
@@ -251,7 +253,7 @@ export class MarkerController implements editorCommon.IEditorContribution {
 			new Action(PrevMarkerAction.ID, PrevMarkerAction.LABEL + (prevMarkerKeybinding ? ` (${prevMarkerKeybinding.getLabel()})` : ''), 'show-previous-problem chevron-up', this._model.canNavigate(), async () => { if (this._model) { this._model.move(false, true); } }),
 			new Action(NextMarkerAction.ID, NextMarkerAction.LABEL + (nextMarkerKeybinding ? ` (${nextMarkerKeybinding.getLabel()})` : ''), 'show-next-problem chevron-down', this._model.canNavigate(), async () => { if (this._model) { this._model.move(true, true); } })
 		];
-		this._widget = new MarkerNavigationWidget(this._editor, actions, this._themeService);
+		this._widget = new MarkerNavigationWidget(this._editor, actions, this._themeService, this._openerService);
 		this._widgetVisible.set(true);
 		this._widget.onDidClose(() => this._cleanUp(), this, this._disposeOnClose);
 

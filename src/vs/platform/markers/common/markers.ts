@@ -80,6 +80,7 @@ export interface IMarkerData {
 	code?: string;
 	severity: MarkerSeverity;
 	message: string;
+	richMessage?: string;
 	source?: string;
 	startLineNumber: number;
 	startColumn: number;
@@ -100,6 +101,7 @@ export interface IMarker {
 	severity: MarkerSeverity;
 	code?: string;
 	message: string;
+	richMessage?: string;
 	source?: string;
 	startLineNumber: number;
 	startColumn: number;

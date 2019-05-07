@@ -4289,6 +4289,11 @@ declare module 'vscode' {
 		message: string;
 
 		/**
+		 * Markdown encoded message
+		 */
+		richMessage?: string;
+
+		/**
 		 * The severity, default is [error](#DiagnosticSeverity.Error).
 		 */
 		severity: DiagnosticSeverity;

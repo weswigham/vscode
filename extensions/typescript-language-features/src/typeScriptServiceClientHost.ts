@@ -261,6 +261,10 @@ export default class TypeScriptServiceClientHost extends Disposable {
 			converted.tags = [vscode.DiagnosticTag.Unnecessary];
 		}
 		(converted as vscode.Diagnostic & { reportUnnecessary: any }).reportUnnecessary = diagnostic.reportsUnnecessary;
+		if (diagnostic.markdown) {
+			// Allow markdown message content to be passed thru
+			converted.richMessage = diagnostic.markdown;
+		}
 		return converted as vscode.Diagnostic & { reportUnnecessary: any };
 	}
 

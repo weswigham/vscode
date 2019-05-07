@@ -1113,6 +1113,7 @@ declare namespace monaco.editor {
 		severity: MarkerSeverity;
 		code?: string;
 		message: string;
+		richMessage?: string;
 		source?: string;
 		startLineNumber: number;
 		startColumn: number;
@@ -1129,6 +1130,7 @@ declare namespace monaco.editor {
 		code?: string;
 		severity: MarkerSeverity;
 		message: string;
+		richMessage?: string;
 		source?: string;
 		startLineNumber: number;
 		startColumn: number;
