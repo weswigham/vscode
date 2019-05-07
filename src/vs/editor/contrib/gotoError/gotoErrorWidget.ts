@@ -102,7 +102,9 @@ class MessageWidget {
 		this._editor.applyFontInfo(this._messageBlock);
 		let lastLineElement = this._messageBlock;
 		if (richMessage) {
-			const rendered = renderMarkdown(new MarkdownString(richMessage));
+			const text = new MarkdownString(richMessage);
+			text.isTrusted = true;
+			const rendered = renderMarkdown(text);
 			const spanContainer = document.createElement('span');
 			spanContainer.append(...Array.prototype.slice.call(rendered.children[0].childNodes));
 			lastLineElement.appendChild(spanContainer);

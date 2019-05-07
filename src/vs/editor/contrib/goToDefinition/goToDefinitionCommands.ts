@@ -29,6 +29,9 @@ import { IProgressService } from 'vs/platform/progress/common/progress';
 import { getDefinitionsAtPosition, getImplementationsAtPosition, getTypeDefinitionsAtPosition, getDeclarationsAtPosition } from './goToDefinition';
 import { CommandsRegistry } from 'vs/platform/commands/common/commands';
 import { EditorStateCancellationTokenSource, CodeEditorStateFlag } from 'vs/editor/browser/core/editorState';
+import { URI } from 'vs/base/common/uri';
+import { IModelService } from 'vs/editor/common/services/modelService';
+import { ITextModelService } from 'vs/editor/common/services/resolverService';
 
 export class DefinitionActionConfig {
 
@@ -51,7 +54,7 @@ export class DefinitionAction extends EditorAction {
 		this._configuration = configuration;
 	}
 
-	public run(accessor: ServicesAccessor, editor: ICodeEditor): Promise<void> {
+	public async run(accessor: ServicesAccessor, editor: ICodeEditor, opt?: { resource?: URI, position?: corePosition.IPosition }): Promise<void> {
 		if (!editor.hasModel()) {
 			return Promise.resolve(undefined);
 		}
@@ -59,14 +62,22 @@ export class DefinitionAction extends EditorAction {
 		const editorService = accessor.get(ICodeEditorService);
 		const progressService = accessor.get(IProgressService);
 
-		const model = editor.getModel();
-		const pos = editor.getPosition();
+		const modelRaw = opt && opt.resource ? accessor.get(IModelService).getModel(opt.resource) : editor.getModel();
+		let model: ITextModel;
+		if (!modelRaw) {
+			const ref = await accessor.get(ITextModelService).createModelReference(opt!.resource!);
+			model = ref.object.textEditorModel;
+		}
+		else {
+			model = modelRaw;
+		}
+		const pos = opt && opt.position ? corePosition.Position.lift(opt.position) : editor.getPosition();
 
 		const cts = new EditorStateCancellationTokenSource(editor, CodeEditorStateFlag.Value | CodeEditorStateFlag.Position);
 
 		const definitionPromise = this._getTargetLocationForPosition(model, pos, cts.token).then(async references => {
 
-			if (cts.token.isCancellationRequested || model.isDisposed() || editor.getModel() !== model) {
+			if (cts.token.isCancellationRequested || model.isDisposed() || !opt && editor.getModel() !== model) {
 				// new model, no more model
 				return;
 			}
@@ -113,7 +124,7 @@ export class DefinitionAction extends EditorAction {
 		});
 
 		progressService.showWhile(definitionPromise, 250);
-		return definitionPromise;
+		await definitionPromise;
 	}
 
 	protected _getTargetLocationForPosition(model: ITextModel, position: corePosition.Position, token: CancellationToken): Promise<LocationLink[]> {
