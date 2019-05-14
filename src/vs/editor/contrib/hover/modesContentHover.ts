@@ -42,6 +42,8 @@ import { CodeActionKind } from 'vs/editor/contrib/codeAction/codeActionTrigger';
 import { IModeService } from 'vs/editor/common/services/modeService';
 import { withNullAsUndefined } from 'vs/base/common/types';
 import { IIdentifiedSingleEditOperation } from 'vs/editor/common/model';
+import { renderMarkdown } from 'vs/base/browser/htmlContentRenderer';
+import { URI } from 'vs/base/common/uri';
 
 const $ = dom.$;
 
@@ -489,12 +491,36 @@ export class ModesContentHoverWidget extends ContentHoverWidget {
 	private renderMarkerHover(markerHover: MarkerHover): HTMLElement {
 		const hoverElement = $('div.hover-row');
 		const markerElement = dom.append(hoverElement, $('div.marker.hover-contents'));
-		const { source, message, code, relatedInformation } = markerHover.marker;
+		const { source, message, code, relatedInformation, richMessage } = markerHover.marker;
 
 		this._editor.applyFontInfo(markerElement);
 		const messageElement = dom.append(markerElement, $('span'));
 		messageElement.style.whiteSpace = 'pre-wrap';
-		messageElement.innerText = message;
+		if (richMessage && this._openerService) {
+			const rendered = renderMarkdown(richMessage);
+			const spanContainer = document.createElement('span');
+			spanContainer.append(...Array.prototype.slice.call(rendered.children[0].childNodes));
+			messageElement.appendChild(spanContainer);
+			messageElement.addEventListener('click', event => {
+				for (let node = event.target as HTMLElement; node; node = node.parentNode as HTMLElement) {
+					if (node instanceof HTMLAnchorElement) {
+						const href = node.getAttribute('data-href');
+						if (href) {
+							this.hide();
+							MarkerController.get(this._editor).show(markerHover.marker);
+							this._editor.focus();
+							this._openerService!.open(URI.parse(href)).catch(onUnexpectedError);
+						}
+						break;
+					} else if (node === event.currentTarget) {
+						break;
+					}
+				}
+			});
+		}
+		else {
+			messageElement.innerText = message;
+		}
 
 		if (source || code) {
 			const detailsElement = dom.append(markerElement, $('span'));
