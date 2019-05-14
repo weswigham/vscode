@@ -8,6 +8,7 @@ import { Event } from 'vs/base/common/event';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 import { localize } from 'vs/nls';
 import Severity from 'vs/base/common/severity';
+import { IMarkdownString } from 'vs/base/common/htmlContent';
 
 export interface IMarkerService {
 	_serviceBrand: any;
@@ -80,7 +81,7 @@ export interface IMarkerData {
 	code?: string;
 	severity: MarkerSeverity;
 	message: string;
-	richMessage?: string;
+	richMessage?: IMarkdownString;
 	source?: string;
 	startLineNumber: number;
 	startColumn: number;
@@ -101,7 +102,7 @@ export interface IMarker {
 	severity: MarkerSeverity;
 	code?: string;
 	message: string;
-	richMessage?: string;
+	richMessage?: IMarkdownString;
 	source?: string;
 	startLineNumber: number;
 	startColumn: number;

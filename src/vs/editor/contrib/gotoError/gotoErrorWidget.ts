@@ -28,7 +28,6 @@ import { IActionBarOptions, ActionsOrientation } from 'vs/base/browser/ui/action
 import { peekViewTitleForeground, peekViewTitleInfoForeground } from 'vs/editor/contrib/referenceSearch/referencesWidget';
 import { AccessibilitySupport } from 'vs/platform/accessibility/common/accessibility';
 import { renderMarkdown } from 'vs/base/browser/htmlContentRenderer';
-import { MarkdownString } from 'vs/base/common/htmlContent';
 import { IOpenerService } from 'vs/platform/opener/common/opener';
 import { URI } from 'vs/base/common/uri';
 
@@ -102,9 +101,7 @@ class MessageWidget {
 		this._editor.applyFontInfo(this._messageBlock);
 		let lastLineElement = this._messageBlock;
 		if (richMessage) {
-			const text = new MarkdownString(richMessage);
-			text.isTrusted = true;
-			const rendered = renderMarkdown(text);
+			const rendered = renderMarkdown(richMessage);
 			const spanContainer = document.createElement('span');
 			spanContainer.append(...Array.prototype.slice.call(rendered.children[0].childNodes));
 			lastLineElement.appendChild(spanContainer);

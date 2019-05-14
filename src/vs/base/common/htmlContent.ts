@@ -40,6 +40,12 @@ export class MarkdownString implements IMarkdownString {
 		this.value += '\n```\n';
 		return this;
 	}
+
+	static from(thing: IMarkdownString): MarkdownString {
+		const newThing = new MarkdownString(thing.value);
+		newThing.isTrusted = thing.isTrusted;
+		return newThing;
+	}
 }
 
 export function isEmptyMarkdownString(oneOrMany: IMarkdownString | IMarkdownString[] | null | undefined): boolean {

@@ -4291,7 +4291,7 @@ declare module 'vscode' {
 		/**
 		 * Markdown encoded message
 		 */
-		richMessage?: string;
+		richMessage?: { value: string, isTrusted?: boolean };
 
 		/**
 		 * The severity, default is [error](#DiagnosticSeverity.Error).

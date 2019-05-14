@@ -6,7 +6,7 @@
 import { coalesce, equals } from 'vs/base/common/arrays';
 import { illegalArgument } from 'vs/base/common/errors';
 import { IRelativePattern } from 'vs/base/common/glob';
-import { isMarkdownString } from 'vs/base/common/htmlContent';
+import { isMarkdownString, IMarkdownString } from 'vs/base/common/htmlContent';
 import { values } from 'vs/base/common/map';
 import { startsWith } from 'vs/base/common/strings';
 import { URI } from 'vs/base/common/uri';
@@ -860,7 +860,7 @@ export class Diagnostic {
 
 	range: Range;
 	message: string;
-	richMessage?: string;
+	richMessage?: IMarkdownString;
 	source: string;
 	code: string | number;
 	severity: DiagnosticSeverity;

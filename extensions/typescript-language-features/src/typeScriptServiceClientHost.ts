@@ -261,11 +261,38 @@ export default class TypeScriptServiceClientHost extends Disposable {
 			converted.tags = [vscode.DiagnosticTag.Unnecessary];
 		}
 		(converted as vscode.Diagnostic & { reportUnnecessary: any }).reportUnnecessary = diagnostic.reportsUnnecessary;
-		if (diagnostic.markdown) {
+		if (diagnostic.annotations) {
 			// Allow markdown message content to be passed thru
-			converted.richMessage = diagnostic.markdown;
+			converted.richMessage = this.convertAnnotationsIntoMarkdown(text, diagnostic.annotations);
 		}
 		return converted as vscode.Diagnostic & { reportUnnecessary: any };
+	}
+
+	private convertAnnotationsIntoMarkdown(text: string, annotations: protocol.DiagnosticAnnotationSpan[]) {
+		// TODO: If the server returns overlapping annotation spans, we should handle that in some way
+		// rather than assuming they are non-overlapping
+		annotations.sort(compareAnnotations);
+
+		let value = '';
+		let lastEnd = 0;
+		for (const a of annotations) {
+			if (a.kind === 'symbol') {
+				value += text.slice(lastEnd, a.start);
+				const original = text.slice(a.start, lastEnd = a.start + a.length);
+				const replacement = `[${original}](command:editor.action.peekDefinition?${encodeURIComponent(JSON.stringify({
+					resource: { $mid: 1, scheme: 'file', authority: '', path: a.file.startsWith('/') ? a.file : `/${a.file}` }, // This is a serialized URL
+					position: { lineNumber: a.location.line, column: a.location.offset } // This is an IPosition from common/core/position
+				}))})`;
+				value += replacement;
+			}
+		}
+
+		value += text.slice(lastEnd);
+
+		return {
+			value,
+			isTrusted: true
+		};
 	}
 
 	private getDiagnosticSeverity(diagnostic: Proto.Diagnostic): vscode.DiagnosticSeverity {
@@ -294,4 +321,8 @@ export default class TypeScriptServiceClientHost extends Disposable {
 	private isStyleCheckDiagnostic(code: number | undefined): boolean {
 		return code ? styleCheckDiagnostics.indexOf(code) !== -1 : false;
 	}
+}
+
+function compareAnnotations(a: protocol.DiagnosticAnnotationSpan, b: protocol.DiagnosticAnnotationSpan) {
+	return a.start - b.start;
 }
