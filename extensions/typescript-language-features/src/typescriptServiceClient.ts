@@ -25,6 +25,7 @@ import Tracer from './utils/tracer';
 import { inferredProjectConfig } from './utils/tsconfig';
 import { TypeScriptVersionPicker } from './utils/versionPicker';
 import { TypeScriptVersion, TypeScriptVersionProvider } from './utils/versionProvider';
+import { IApplyRevealCallback } from './commands/expandReveal';
 
 const localize = nls.loadMessageBundle();
 
@@ -102,7 +103,8 @@ export default class TypeScriptServiceClient extends Disposable implements IType
 		private readonly onDidChangeTypeScriptVersion: (version: TypeScriptVersion) => void,
 		public readonly pluginManager: PluginManager,
 		private readonly logDirectoryProvider: LogDirectoryProvider,
-		allModeIds: string[]
+		allModeIds: string[],
+		public readonly applyReveal: IApplyRevealCallback
 	) {
 		super();
 		this.pathSeparator = path.sep;
