@@ -361,10 +361,10 @@ export default class TypeScriptServiceClientHost extends Disposable {
 			value += text.slice(lastEnd, a.start);
 			const original = text.slice(a.start, lastEnd = a.start + a.length);
 			if (a.kind === 'symbol') {
-				const replacement = `[${original}](command:editor.action.peekDefinition?${encodeURIComponent(JSON.stringify({
-					resource: { $mid: 1, scheme: 'file', authority: '', path: a.file.startsWith('/') ? a.file : `/${a.file}` }, // This is a serialized URL
-					position: { lineNumber: a.location.line, column: a.location.offset } // This is an IPosition from common/core/position
-				}))})`;
+				const replacement = `[${original}](command:editor.action.peekDefinition?${encodeURIComponent(JSON.stringify([
+					{ $mid: 1, scheme: 'file', authority: '', path: a.file.startsWith('/') ? a.file : `/${a.file}` }, // This is a serialized URL
+					{ lineNumber: a.location.line, column: a.location.offset } // This is an IPosition from common/core/position
+				]))})`;
 				value += replacement;
 			}
 			else if (a.kind === 'reveal') {

@@ -87,7 +87,7 @@ export abstract class Command {
 
 			KeybindingsRegistry.registerCommandAndKeybindingRule({
 				id: this.id,
-				handler: (accessor, args) => this.runCommand(accessor, args),
+				handler: (accessor, ...args) => this.runCommand(accessor, ...args),
 				weight: this._kbOpts.weight,
 				when: kbWhen,
 				primary: this._kbOpts.primary,
@@ -102,13 +102,13 @@ export abstract class Command {
 
 			CommandsRegistry.registerCommand({
 				id: this.id,
-				handler: (accessor, args) => this.runCommand(accessor, args),
+				handler: (accessor, ...args) => this.runCommand(accessor, ...args),
 				description: this._description
 			});
 		}
 	}
 
-	public abstract runCommand(accessor: ServicesAccessor, args: any): void | Promise<void>;
+	public abstract runCommand(accessor: ServicesAccessor, ...args: any[]): void | Promise<void>;
 }
 
 //#endregion Command
@@ -128,7 +128,7 @@ export abstract class EditorCommand extends Command {
 	 */
 	public static bindToContribution<T extends IEditorContribution>(controllerGetter: (editor: ICodeEditor) => T): EditorControllerCommand<T> {
 		return class EditorControllerCommandImpl extends EditorCommand {
-			private readonly _callback: (controller: T, args: any) => void;
+			private readonly _callback: (controller: T, ...args: any[]) => void;
 
 			constructor(opts: IContributionCommandOptions<T>) {
 				super(opts);
@@ -136,16 +136,16 @@ export abstract class EditorCommand extends Command {
 				this._callback = opts.handler;
 			}
 
-			public runEditorCommand(accessor: ServicesAccessor, editor: ICodeEditor, args: any): void {
+			public runEditorCommand(accessor: ServicesAccessor, editor: ICodeEditor, ...args: any[]): void {
 				const controller = controllerGetter(editor);
 				if (controller) {
-					this._callback(controllerGetter(editor), args);
+					this._callback(controllerGetter(editor), ...args);
 				}
 			}
 		};
 	}
 
-	public runCommand(accessor: ServicesAccessor, args: any): void | Promise<void> {
+	public runCommand(accessor: ServicesAccessor, ...args: any[]): void | Promise<void> {
 		const codeEditorService = accessor.get(ICodeEditorService);
 
 		// Find the editor with text focus or active
@@ -162,11 +162,11 @@ export abstract class EditorCommand extends Command {
 				return;
 			}
 
-			return this.runEditorCommand(editorAccessor, editor!, args);
+			return this.runEditorCommand(editorAccessor, editor!, ...args);
 		});
 	}
 
-	public abstract runEditorCommand(accessor: ServicesAccessor | null, editor: ICodeEditor, args: any): void | Promise<void>;
+	public abstract runEditorCommand(accessor: ServicesAccessor | null, editor: ICodeEditor, ...args: any[]): void | Promise<void>;
 }
 
 //#endregion EditorCommand
@@ -213,9 +213,9 @@ export abstract class EditorAction extends EditorCommand {
 		super.register();
 	}
 
-	public runEditorCommand(accessor: ServicesAccessor, editor: ICodeEditor, args: any): void | Promise<void> {
+	public runEditorCommand(accessor: ServicesAccessor, editor: ICodeEditor, ...args: any[]): void | Promise<void> {
 		this.reportTelemetry(accessor, editor);
-		return this.run(accessor, editor, args || {});
+		return this.run(accessor, editor, ...args);
 	}
 
 	protected reportTelemetry(accessor: ServicesAccessor, editor: ICodeEditor) {
@@ -231,7 +231,7 @@ export abstract class EditorAction extends EditorCommand {
 		accessor.get(ITelemetryService).publicLog('editorActionInvoked', { name: this.label, id: this.id, ...editor.getTelemetryData() });
 	}
 
-	public abstract run(accessor: ServicesAccessor, editor: ICodeEditor, args: any): void | Promise<void>;
+	public abstract run(accessor: ServicesAccessor, editor: ICodeEditor, ...args: any[]): void | Promise<void>;
 }
 
 //#endregion EditorAction

@@ -27,6 +27,8 @@ import { CommandsRegistry, ICommandHandler } from 'vs/platform/commands/common/c
 import { URI } from 'vs/base/common/uri';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { CancellationToken } from 'vs/base/common/cancellation';
+import { IModelService } from 'vs/editor/common/services/modelService';
+import { ITextModelService } from 'vs/editor/common/services/resolverService';
 
 export const defaultReferenceSearchOptions: RequestOptions = {
 	getMetaTitle(model) {
@@ -103,7 +105,6 @@ let findReferencesCommand: ICommandHandler = (accessor: ServicesAccessor, resour
 	if (!position) {
 		throw new Error('illegal argument, position');
 	}
-
 	const codeEditorService = accessor.get(ICodeEditorService);
 	return codeEditorService.openCodeEditor({ resource }, codeEditorService.getFocusedCodeEditor()).then(control => {
 		if (!isCodeEditor(control) || !control.hasModel()) {
@@ -119,6 +120,35 @@ let findReferencesCommand: ICommandHandler = (accessor: ServicesAccessor, resour
 		let range = new Range(position.lineNumber, position.column, position.lineNumber, position.column);
 		return Promise.resolve(controller.toggleWidget(range, references, defaultReferenceSearchOptions));
 	});
+};
+
+let findReferencesRevealAtCurrentSelection: ICommandHandler = async (accessor: ServicesAccessor, resource: URI, position: IPosition) => {
+	if (!(resource instanceof URI)) {
+		throw new Error('illegal argument, uri');
+	}
+	if (!position) {
+		throw new Error('illegal argument, position');
+	}
+	const service = accessor.get(ICodeEditorService);
+	const editor = service.getActiveCodeEditor();
+	if (!editor) {
+		throw new Error('no active editor');
+	}
+	if (!isCodeEditor(editor) || !editor.hasModel()) {
+		return undefined;
+	}
+
+	let model = accessor.get(IModelService).getModel(resource);
+	if (!model) {
+		const ref = await accessor.get(ITextModelService).createModelReference(resource!);
+		model = ref.object.textEditorModel;
+	}
+	let controller = ReferencesController.get(editor);
+	if (!controller) {
+		return undefined;
+	}
+	let references = createCancelablePromise(token => provideReferences(model!, Position.lift(position), token).then(references => new ReferencesModel(references)));
+	return Promise.resolve(controller.toggleWidget(editor.getSelection(), references, defaultReferenceSearchOptions));
 };
 
 let showReferencesCommand: ICommandHandler = (accessor: ServicesAccessor, resource: URI, position: IPosition, references: Location[]) => {
@@ -154,6 +184,11 @@ let showReferencesCommand: ICommandHandler = (accessor: ServicesAccessor, resour
 CommandsRegistry.registerCommand({
 	id: 'editor.action.findReferences',
 	handler: findReferencesCommand
+});
+
+CommandsRegistry.registerCommand({
+	id: 'editor.action.findReferencesHere',
+	handler: findReferencesRevealAtCurrentSelection
 });
 
 CommandsRegistry.registerCommand({

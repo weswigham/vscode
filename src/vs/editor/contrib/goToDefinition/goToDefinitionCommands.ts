@@ -54,7 +54,7 @@ export class DefinitionAction extends EditorAction {
 		this._configuration = configuration;
 	}
 
-	public async run(accessor: ServicesAccessor, editor: ICodeEditor, opt?: { resource?: URI, position?: corePosition.IPosition }): Promise<void> {
+	public async run(accessor: ServicesAccessor, editor: ICodeEditor, resource?: URI, position?: corePosition.IPosition): Promise<void> {
 		if (!editor.hasModel()) {
 			return Promise.resolve(undefined);
 		}
@@ -62,22 +62,22 @@ export class DefinitionAction extends EditorAction {
 		const editorService = accessor.get(ICodeEditorService);
 		const progressService = accessor.get(IProgressService);
 
-		const modelRaw = opt && opt.resource ? accessor.get(IModelService).getModel(opt.resource) : editor.getModel();
+		const modelRaw = resource ? accessor.get(IModelService).getModel(resource) : editor.getModel();
 		let model: ITextModel;
 		if (!modelRaw) {
-			const ref = await accessor.get(ITextModelService).createModelReference(opt!.resource!);
+			const ref = await accessor.get(ITextModelService).createModelReference(resource!);
 			model = ref.object.textEditorModel;
 		}
 		else {
 			model = modelRaw;
 		}
-		const pos = opt && opt.position ? corePosition.Position.lift(opt.position) : editor.getPosition();
+		const pos = position ? corePosition.Position.lift(position) : editor.getPosition();
 
 		const cts = new EditorStateCancellationTokenSource(editor, CodeEditorStateFlag.Value | CodeEditorStateFlag.Position);
 
 		const definitionPromise = this._getTargetLocationForPosition(model, pos, cts.token).then(async references => {
 
-			if (cts.token.isCancellationRequested || model.isDisposed() || !opt && editor.getModel() !== model) {
+			if (cts.token.isCancellationRequested || model.isDisposed() || !resource && editor.getModel() !== model) {
 				// new model, no more model
 				return;
 			}

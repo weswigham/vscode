@@ -23,13 +23,15 @@ import { isNonEmptyArray } from 'vs/base/common/arrays';
 import { Event, Emitter } from 'vs/base/common/event';
 import { PeekViewWidget } from 'vs/editor/contrib/referenceSearch/peekViewWidget';
 import { basename } from 'vs/base/common/resources';
-import { IAction } from 'vs/base/common/actions';
+import { IAction, Action } from 'vs/base/common/actions';
 import { IActionBarOptions, ActionsOrientation } from 'vs/base/browser/ui/actionbar/actionbar';
 import { peekViewTitleForeground, peekViewTitleInfoForeground } from 'vs/editor/contrib/referenceSearch/referencesWidget';
 import { AccessibilitySupport } from 'vs/platform/accessibility/common/accessibility';
 import { renderMarkdown } from 'vs/base/browser/htmlContentRenderer';
 import { IOpenerService } from 'vs/platform/opener/common/opener';
 import { URI } from 'vs/base/common/uri';
+import { Schemas } from 'vs/base/common/network';
+import { IContextMenuService } from 'vs/platform/contextview/browser/contextView';
 
 class MessageWidget {
 
@@ -47,7 +49,8 @@ class MessageWidget {
 		parent: HTMLElement,
 		editor: ICodeEditor,
 		onRelatedInformation: (related: IRelatedInformation) => void,
-		private readonly _openerService: IOpenerService
+		private readonly _openerService: IOpenerService,
+		private readonly _contextMenuService: IContextMenuService,
 	) {
 		this._editor = editor;
 
@@ -111,6 +114,36 @@ class MessageWidget {
 						const href = node.getAttribute('data-href');
 						if (href) {
 							this._openerService.open(URI.parse(href));
+						}
+						break;
+					} else if (node === event.currentTarget) {
+						break;
+					}
+				}
+			});
+			lastLineElement.addEventListener('contextmenu', event => {
+				for (let node = event.target as HTMLElement; node; node = node.parentNode as HTMLElement) {
+					if (node instanceof HTMLAnchorElement) {
+						const href = node.getAttribute('data-href');
+						if (href) {
+							const uri = URI.parse(href);
+							if (uri.scheme === Schemas.command && uri.path === 'editor.action.peekDefinition') {
+								const pairs: [string, string][] = [
+									['editor.action.peekDefinition', nls.localize('actions.previewDecl.label', "Peek Definition")],
+									['editor.action.goToDeclaration', nls.localize('actions.goToDecl.label', "Go to Definition")],
+									['editor.action.findReferencesHere', nls.localize('references.action.label', "Peek References")],
+								];
+								const actions: Action[] = pairs.map(([id, label]) =>
+									new Action(id, label, /*cssClass*/ undefined, /*enabled*/ true, async () => {
+										await this._openerService.open(URI.parse(`command:${id}?${uri.query}`));
+									})
+								);
+								this._contextMenuService.showContextMenu({
+									getAnchor: () => event.target as HTMLElement,
+									getActions: () => actions,
+									onHide: () => dispose(actions)
+								});
+							}
 						}
 						break;
 					} else if (node === event.currentTarget) {
@@ -209,7 +242,8 @@ export class MarkerNavigationWidget extends PeekViewWidget {
 		editor: ICodeEditor,
 		private readonly actions: IAction[],
 		private readonly _themeService: IThemeService,
-		private readonly _openerService: IOpenerService
+		private readonly _openerService: IOpenerService,
+		private readonly _contextMenuService: IContextMenuService
 	) {
 		super(editor, { showArrow: true, showFrame: true, isAccessible: true });
 		this._severity = MarkerSeverity.Warning;
@@ -275,7 +309,7 @@ export class MarkerNavigationWidget extends PeekViewWidget {
 		this._container = document.createElement('div');
 		container.appendChild(this._container);
 
-		this._message = new MessageWidget(this._container, this.editor, related => this._onDidSelectRelatedInformation.fire(related), this._openerService);
+		this._message = new MessageWidget(this._container, this.editor, related => this._onDidSelectRelatedInformation.fire(related), this._openerService, this._contextMenuService);
 		this._disposables.push(this._message);
 	}
 
