@@ -40,6 +40,7 @@ class MessageWidget {
 
 	private readonly _editor: ICodeEditor;
 	private readonly _messageBlock: HTMLDivElement;
+	private readonly _messageBlockEventHandles: IDisposable[] = [];
 	private readonly _relatedBlock: HTMLDivElement;
 	private readonly _scrollable: ScrollableElement;
 	private readonly _relatedDiagnostics = new WeakMap<HTMLElement, IRelatedInformation>();
@@ -100,6 +101,8 @@ class MessageWidget {
 			this._longestLineLength = Math.max(line.length, this._longestLineLength);
 		}
 
+		dispose(...this._messageBlockEventHandles);
+		this._messageBlockEventHandles.length = 0;
 		dom.clearNode(this._messageBlock);
 		this._editor.applyFontInfo(this._messageBlock);
 		let lastLineElement = this._messageBlock;
@@ -108,7 +111,7 @@ class MessageWidget {
 			const spanContainer = document.createElement('span');
 			spanContainer.append(...Array.prototype.slice.call(rendered.children[0].childNodes));
 			lastLineElement.appendChild(spanContainer);
-			lastLineElement.addEventListener('click', event => {
+			this._messageBlockEventHandles.push(dom.addDisposableListener(lastLineElement, dom.EventType.CLICK, event => {
 				for (let node = event.target as HTMLElement; node; node = node.parentNode as HTMLElement) {
 					if (node instanceof HTMLAnchorElement) {
 						const href = node.getAttribute('data-href');
@@ -120,8 +123,8 @@ class MessageWidget {
 						break;
 					}
 				}
-			});
-			lastLineElement.addEventListener('contextmenu', event => {
+			}));
+			this._messageBlockEventHandles.push(dom.addDisposableListener(lastLineElement, dom.EventType.CONTEXT_MENU, event => {
 				for (let node = event.target as HTMLElement; node; node = node.parentNode as HTMLElement) {
 					if (node instanceof HTMLAnchorElement) {
 						const href = node.getAttribute('data-href');
@@ -150,7 +153,7 @@ class MessageWidget {
 						break;
 					}
 				}
-			});
+			}));
 		}
 		else {
 			for (const line of lines) {

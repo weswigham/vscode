@@ -468,9 +468,11 @@ export class ModesContentHoverWidget extends ContentHoverWidget {
 		});
 
 		if (markerMessages.length) {
-			markerMessages.forEach(msg => fragment.appendChild(this.renderMarkerHover(msg)));
+			const disposables: IDisposable[] = [];
+			markerMessages.forEach(msg => fragment.appendChild(this.renderMarkerHover(msg, disposables)));
 			const markerHoverForStatusbar = markerMessages.length === 1 ? markerMessages[0] : markerMessages.sort((a, b) => MarkerSeverity.compare(a.marker.severity, b.marker.severity))[0];
-			fragment.appendChild(this.renderMarkerStatusbar(markerHoverForStatusbar));
+			fragment.appendChild(this.renderMarkerStatusbar(markerHoverForStatusbar, disposables));
+			this.renderDisposable = combinedDisposable(disposables);
 		}
 
 		// show
@@ -488,7 +490,7 @@ export class ModesContentHoverWidget extends ContentHoverWidget {
 		this._isChangingDecorations = false;
 	}
 
-	private renderMarkerHover(markerHover: MarkerHover): HTMLElement {
+	private renderMarkerHover(markerHover: MarkerHover, disposables: IDisposable[]): HTMLElement {
 		const hoverElement = $('div.hover-row');
 		const markerElement = dom.append(hoverElement, $('div.marker.hover-contents'));
 		const { source, message, code, relatedInformation, richMessage } = markerHover.marker;
@@ -501,7 +503,7 @@ export class ModesContentHoverWidget extends ContentHoverWidget {
 			const spanContainer = document.createElement('span');
 			spanContainer.append(...Array.prototype.slice.call(rendered.children[0].childNodes));
 			messageElement.appendChild(spanContainer);
-			messageElement.addEventListener('click', event => {
+			disposables.push(dom.addDisposableListener(messageElement, dom.EventType.CLICK, event => {
 				for (let node = event.target as HTMLElement; node; node = node.parentNode as HTMLElement) {
 					if (node instanceof HTMLAnchorElement) {
 						const href = node.getAttribute('data-href');
@@ -516,7 +518,7 @@ export class ModesContentHoverWidget extends ContentHoverWidget {
 						break;
 					}
 				}
-			});
+			}));
 		}
 		else {
 			messageElement.innerText = message;
@@ -552,9 +554,8 @@ export class ModesContentHoverWidget extends ContentHoverWidget {
 		return hoverElement;
 	}
 
-	private renderMarkerStatusbar(markerHover: MarkerHover): HTMLElement {
+	private renderMarkerStatusbar(markerHover: MarkerHover, disposables: IDisposable[]): HTMLElement {
 		const hoverElement = $('div.hover-row.status-bar');
-		const disposables: IDisposable[] = [];
 		const actionsElement = dom.append(hoverElement, $('div.actions'));
 		disposables.push(this.renderAction(actionsElement, {
 			label: nls.localize('quick fixes', "Quick Fix..."),
@@ -581,7 +582,6 @@ export class ModesContentHoverWidget extends ContentHoverWidget {
 				}
 			}));
 		}
-		this.renderDisposable = combinedDisposable(disposables);
 		return hoverElement;
 	}
 
