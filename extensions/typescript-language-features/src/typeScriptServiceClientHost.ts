@@ -364,7 +364,7 @@ export default class TypeScriptServiceClientHost extends Disposable {
 				const replacement = `[${original}](command:editor.action.peekDefinition?${encodeURIComponent(JSON.stringify([
 					{ $mid: 1, scheme: 'file', authority: '', path: a.file.startsWith('/') ? a.file : `/${a.file}` }, // This is a serialized URL
 					{ lineNumber: a.location.line, column: a.location.offset } // This is an IPosition from common/core/position
-				]))})`;
+				]))} "Peek Definition")`; // TODO: Localize alt hover text???
 				value += replacement;
 			}
 			else if (a.kind === 'reveal') {
@@ -374,7 +374,7 @@ export default class TypeScriptServiceClientHost extends Disposable {
 					file,
 					kind
 				};
-				value += `[${original}](command:_typescript.expandReveal?${encodeURIComponent(JSON.stringify(args))})`;
+				value += `[${original}](command:_typescript.expandReveal?${encodeURIComponent(JSON.stringify(args))} "Expand Span")`;
 			}
 			else {
 				value += original;
