@@ -130,7 +130,7 @@ class MessageWidget {
 							if (uri.scheme === Schemas.command && uri.path === 'editor.action.peekDefinition') {
 								const pairs: [string, string][] = [
 									['editor.action.peekDefinition', nls.localize('actions.previewDecl.label', "Peek Definition")],
-									['editor.action.goToDeclaration', nls.localize('actions.goToDecl.label', "Go to Definition")],
+									['editor.action.revealDefinition', nls.localize('actions.goToDecl.label', "Go to Definition")],
 									['editor.action.findReferencesHere', nls.localize('references.action.label', "Peek References")],
 								];
 								const actions: Action[] = pairs.map(([id, label]) =>
