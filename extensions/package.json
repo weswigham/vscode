@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "Dependencies shared by all extensions",
   "dependencies": {
-    "typescript": "3.4.5"
+    "typescript": "https://typescript.visualstudio.com/cf7ac146-d525-443c-b23c-0d58337efebc/_apis/build/builds/30826/artifacts?artifactName=tgz&fileId=2AA7372BE43B6224E4B5F6D257CEFCB90AA9815F7A7E45F4F80926AB6F53DFD302&fileName=typescript-3.5.0-insiders.20190517.tgz&api-version=5.0-preview.3"
   },
   "scripts": {
     "postinstall": "node ./postinstall"
